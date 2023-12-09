@@ -1,0 +1,18 @@
+Python CPU Benchmark by Alex Dedyura (Windows, macOS(Darwin), Linux)
+CPU: AMD Ryzen 5 5600H with Radeon Graphics
+Arch: x86_64
+OS: Linux
+
+Benchmarking: 
+
+Time: 16.214s
+Time: 15.75s
+Time: 15.746s
+Time: 15.883s
+Time: 15.706s
+Time: 15.701s
+Time: 15.685s
+Time: 15.721s
+Time: 15.72s
+Time: 15.813s
+Average (from 10 repeats): 15.794s
