@@ -77,7 +77,7 @@ def extract_description(df: pd.DataFrame):
 
 
 def search(
-    terms: str, tf_idf: np.matrix, vectorizer, cleaned_description
+    terms: str, tf_idf: np.matrix, vectorizer: TfidfVectorizer, cleaned_description: pd.Series
 ) -> pd.DataFrame:
     Q = vectorizer.transform([terms])
     cos_sim = cosine_similarity(tf_idf, Q, dense_output=False)
@@ -88,7 +88,7 @@ def search(
     return df
 
 
-def searchBM25(terms: str, vectorizer: BM25, cleaned_description) -> pd.DataFrame:
+def searchBM25(terms: str, vectorizer: BM25, cleaned_description: pd.Series) -> pd.DataFrame:
     scores = vectorizer.transform([terms])
     df = pd.DataFrame(scores, columns=["score"]).sort_values("score", ascending=False)
     df["description"] = df.apply(lambda x: cleaned_description.loc[x.index])
