@@ -20,5 +20,5 @@ BM25 is based on TF-IDF but it also accounts for document length and term freque
 
 ### There is a python library named rank_bm25 that provides incorrect bm25 results, identify the issues and modify the library code or provide a wrapper that corrects the results.
 https://github.com/dorianbrown/rank_bm25/blob/master/rank_bm25.py
-Not implemented yet?
+Seems to be correct.
 
