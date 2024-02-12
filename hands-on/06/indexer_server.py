@@ -125,7 +125,9 @@ def search_manual():
     query_term=argList['query'][0]
     results = app.manual_indexer.search(query_term)
     end = time.time()
-    results_df = results.sort_values("score", ascending=False).drop("url_lists", axis=1).head(20)
+    results = results[results["score"] > 0]
+    results_df = results.sort_values("score", ascending=False).drop("url_lists", axis=1).head(100)
+    response_object['hits'] = len(results)
     response_object['results'] = results_df.to_dict('records')
     response_object['elapse'] = end - start
     return response_object
