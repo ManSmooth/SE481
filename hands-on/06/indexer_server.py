@@ -95,6 +95,7 @@ class ManualIndexer:
         df = pd.DataFrame(scores, columns=["score"])
         return self.documents.join(df)
 
+
 app = Flask(__name__)
 app.manual_indexer = ManualIndexer()
 app.es_client = Elasticsearch(
@@ -102,36 +103,64 @@ app.es_client = Elasticsearch(
     basic_auth=("elastic", "+oEqEIt7p6lC_=rI1HIC"),
     ca_certs="./http_ca.crt",
 )
-@app.route(r"/search_es", methods=['GET'])
+
+
+@app.route(r"/search_es", methods=["GET"])
 def search_es():
     start = time.time()
-    response_object = {'status': 'success'}
+    response_object = {"status": "success"}
     argList = request.args.to_dict(flat=False)
-    query_term=argList['query'][0]
-    results = app.es_client.search(index='simple', source_excludes=['url_lists'], size=100, query={"match": { "text": query_term}})
+    query_term = argList["query"][0]
+    results = app.es_client.search(
+        index="simple",
+        source_excludes=["url_lists"],
+        size=100,
+        query={
+            "script_score": {
+                "query": {"match": {"text": query_term}},
+                "script": {"source": "_score * doc['pagerank'].value"},
+            }
+        },
+    )
     end = time.time()
-    total_hit = results['hits']['total']['value']
-    results_df = pd.DataFrame([[hit["_source"]['title'], hit["_source"]['url'], hit["_source"]['text'][:100], hit["_score"]] for hit in results['hits']['hits']], columns=['title', 'url', 'text', 'score'])
-    response_object['total_hit'] = total_hit
-    response_object['results'] = results_df.to_dict('records')
-    response_object['elapse'] = end - start
+    total_hit = results["hits"]["total"]["value"]
+    results_df = pd.DataFrame(
+        [
+            [
+                hit["_source"]["title"],
+                hit["_source"]["url"],
+                hit["_source"]["text"][:100],
+                hit["_score"],
+            ]
+            for hit in results["hits"]["hits"]
+        ],
+        columns=["title", "url", "text", "score"],
+    )
+    response_object["total_hit"] = total_hit
+    response_object["results"] = results_df.to_dict("records")
+    response_object["elapse"] = end - start
     return response_object
 
-@app.route(r"/search_manual", methods=['GET'])
+
+@app.route(r"/search_manual", methods=["GET"])
 def search_manual():
     start = time.time()
-    response_object = {'status': 'success'}
+    response_object = {"status": "success"}
     argList = request.args.to_dict(flat=False)
-    query_term=argList['query'][0]
+    query_term = argList["query"][0]
     results = app.manual_indexer.search(query_term)
     end = time.time()
     results = results[results["score"] > 0]
-    results_df = results.sort_values("score", ascending=False).drop("url_lists", axis=1).head(100)
-    response_object['hits'] = len(results)
-    response_object['results'] = results_df.to_dict('records')
-    response_object['elapse'] = end - start
+    results_df = (
+        results.sort_values("score", ascending=False)
+        .drop("url_lists", axis=1)
+        .head(100)
+    )
+    response_object["hits"] = len(results)
+    response_object["results"] = results_df.to_dict("records")
+    response_object["elapse"] = end - start
     return response_object
+
 
 if __name__ == "__main__":
     app.run(debug=False)
-
