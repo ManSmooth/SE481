@@ -38,7 +38,7 @@ def run_indexer(self):
 ````
 
 ## Combine the BM25 scores with PageRank
-Both scores have been scaled to have them weigh equally. (though I don't know if it's the right call)
+Both scores have been scaled to normalize both. (though I don't know if it's the right call)
 ````python
 scores = minmax_scale(self.bm25.transform([query]))
     df = pd.DataFrame(scores, columns=["score"])
@@ -46,6 +46,28 @@ scores = minmax_scale(self.bm25.transform([query]))
     result_df["score"] = result_df.apply(
         lambda x: self.pr.pr_result[x["url"]] * x["score"], axis=1
     )
+````
+Reused the fitted BM25 model to also score elastic search pagerank. The 0.01 is just a magic number and more of a safety net in case there's inconsistency but I don't think there are.
+````python
+scores = minmax_scale(app.manual_indexer.bm25.transform([query_term]))
+df = pd.DataFrame(scores, columns=["score"])
+bm25_scores = app.manual_indexer.documents.join(df).set_index("url")["score"]
+results_df = pd.DataFrame(
+    [
+        [
+            hit["_source"]["title"],
+            hit["_source"]["url"],
+            hit["_source"]["text"][:100],
+            (
+                hit["_score"] * bm25_scores[hit["_source"]["url"]]
+                if hit["_source"]["url"] in bm25_scores
+                else 0.01
+            ),
+        ]
+        for hit in results["hits"]["hits"]
+    ],
+    columns=["title", "url", "text", "score"],
+).sort_values("score", ascending=False)
 ````
 
 ## Add an html \<b\> .. \<\/b\> tag to the query term and show only two or three sentences surrounding the query term
